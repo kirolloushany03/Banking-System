@@ -104,7 +104,7 @@ namespace Banking_System.Services
             // Log transaction for target account
             await LogTransactionAsync(targetTransaction);
 
-            return _mapper.Map<TransactionDto>(sourceTransaction); // Return the transaction related to the source account
+            return _mapper.Map<TransactionDto>(sourceTransaction);
         }
 
         public async Task<TransactionDto> LogTransactionAsync(Transaction transaction)
