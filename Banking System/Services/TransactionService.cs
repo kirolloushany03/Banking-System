@@ -113,8 +113,13 @@ namespace Banking_System.Services
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var sourceAccount = await _context.TbAccount
-                .FirstOrDefaultAsync(a => a.AccountNumber == createTransferDto.SourceAccountNumber);
+                var accountNumbers = new[] { createTransferDto.SourceAccountNumber, createTransferDto.TargetAccountNumber };
+                var accounts = await _context.TbAccount
+                    .Where(a => accountNumbers.Contains(a.AccountNumber))
+                    .ToListAsync(); // Fetches a list of up to 2 accounts.
+
+                var sourceAccount = accounts.FirstOrDefault(a => a.AccountNumber == createTransferDto.SourceAccountNumber);
+                var targetAccount = accounts.FirstOrDefault(a => a.AccountNumber == createTransferDto.TargetAccountNumber);
 
                 if (sourceAccount == null)
                 {
@@ -131,8 +136,7 @@ namespace Banking_System.Services
                     throw new Exception("Insufficient funds, including overdraft limit.");
                 }
 
-                var targetAccount = await _context.TbAccount
-                .FirstOrDefaultAsync(a => a.AccountNumber == createTransferDto.TargetAccountNumber);
+                
 
                 if (targetAccount == null)
                 {
