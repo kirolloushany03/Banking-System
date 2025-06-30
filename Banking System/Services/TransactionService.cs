@@ -2,6 +2,7 @@
 using Banking_System.Data;
 using Banking_System.Dtos.TransactionDtos;
 using Banking_System.Entites;
+using Microsoft.EntityFrameworkCore;
 
 namespace Banking_System.Services
 {
@@ -64,7 +65,7 @@ namespace Banking_System.Services
             return _mapper.Map<TransactionDto>(await LogTransactionAsync(transaction));
         }
 
-        public async Task<TransactionDto> TransferAsync(CreateTransferDto createTransferDto)
+        /*public async Task<TransactionDto> TransferAsync(CreateTransferDto createTransferDto)
         {
             // Deduct balance from source account
             var sourceAccount = await _accountService.UpdateAccountBalanceAsync(
@@ -105,6 +106,72 @@ namespace Banking_System.Services
             await LogTransactionAsync(targetTransaction);
 
             return _mapper.Map<TransactionDto>(sourceTransaction);
+        }*/
+
+        public async Task<TransactionDto> TransferAsync(CreateTransferDto createTransferDto)
+        {
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var sourceAccount = await _context.TbAccount
+                .FirstOrDefaultAsync(a => a.AccountNumber == createTransferDto.SourceAccountNumber);
+
+                if (sourceAccount == null)
+                {
+                    throw new Exception("Source account not found.");
+                }
+
+                if (sourceAccount.AccountType == AccountType.savings && sourceAccount.Balance < createTransferDto.Amount)
+                {
+                    throw new Exception("Insufficient funds in savings account.");
+                }
+
+                if (sourceAccount.AccountType == AccountType.checking && (sourceAccount.Balance + sourceAccount.OverdraftLimit) < createTransferDto.Amount)
+                {
+                    throw new Exception("Insufficient funds, including overdraft limit.");
+                }
+
+                var targetAccount = await _context.TbAccount
+                .FirstOrDefaultAsync(a => a.AccountNumber == createTransferDto.TargetAccountNumber);
+
+                if (targetAccount == null)
+                {
+                    throw new Exception("Target account not found.");
+                }
+
+                sourceAccount.Balance -= createTransferDto.Amount;
+                targetAccount.Balance += createTransferDto.Amount;
+
+                var sourceTransaction = new Transaction
+                {
+                    AccountId = sourceAccount.Id,
+                    Amount = createTransferDto.Amount,
+                    TransactionType = TransactionType.transfer, // This is an outgoing transfer
+                    Timestamp = DateTime.UtcNow
+                };
+
+                var targetTransaction = new Transaction
+                {
+                    AccountId = targetAccount.Id,
+                    Amount = createTransferDto.Amount,
+                    TransactionType = TransactionType.Deposit, // For the target, a transfer is a deposit
+                    Timestamp = DateTime.UtcNow
+                };
+
+                _context.TbTransaction.Add(sourceTransaction);
+                _context.TbTransaction.Add(targetTransaction);
+
+                await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                return _mapper.Map<TransactionDto>(sourceTransaction);
+            }
+            catch (Exception ex) 
+            {
+                await dbTransaction.RollbackAsync();
+
+                throw;
+            }
         }
 
         public async Task<TransactionDto> LogTransactionAsync(Transaction transaction)
