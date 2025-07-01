@@ -1,6 +1,7 @@
 ﻿using Banking_System.Data;
 using Banking_System.Dtos.TransactionDtos;
 using Banking_System.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace Banking_System.Controllers
             _context = context;
         }
 
+        [Authorize]
         [HttpPost("deposit")]
         public async Task<IActionResult> Deposit([FromBody] CreateDepositDto createDepositDto)
         {
