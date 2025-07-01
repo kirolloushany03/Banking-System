@@ -22,28 +22,25 @@ namespace Banking_System.Services
         }
 
         // Method to create an account
-        public async Task<AccountDto> CreateAccountAsync(CreateAccountDto createAccountDto)
+        public async Task<AccountDto> CreateAccountAsync(CreateAccountDto createAccountDto, int customerId)
         {
-            // Check if an account with the same AccountNumber already exists
             var existingAccount = await _context.TbAccount
                 .FirstOrDefaultAsync(a => a.AccountNumber == createAccountDto.AccountNumber);
 
             if (existingAccount != null)
             {
-                // Handle the case where the account number already exists
                 throw new ArgumentException("Account number already exists.");
             }
 
-            // Map the CreateAccountDto to an Account entity
             var account = _mapper.Map<Account>(createAccountDto);
 
-            // Add the account to the context
-            _context.TbAccount.Add(account);
+            // 👇 THIS IS THE CRUCIAL FIX 👇
+            // We are now assigning the ID of the logged-in customer to the new account.
+            account.CustomerId = customerId;
 
-            // Save changes to the database
+            _context.TbAccount.Add(account);
             await _context.SaveChangesAsync();
 
-            // Map the Account entity to an AccountDto and return it
             return _mapper.Map<AccountDto>(account);
         }
 
