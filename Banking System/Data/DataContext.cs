@@ -8,6 +8,8 @@ namespace Banking_System.Data
         public DbSet<Account> TbAccount { get; set; } = null!;
         public DbSet<Transaction> TbTransaction { get; set; } = null!;
 
+        public DbSet<Customer> TbCustomer { get; set; } = null!;
+
         //adding the realtionship manually one-to-many relationship
         //with ondelete transactions if we 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -19,6 +21,10 @@ namespace Banking_System.Data
                 .WithMany(a => a.Transactions)
                 .HasForeignKey(t => t.AccountId);
 
+            modelBuilder.Entity<Account>()
+                .HasOne(a => a.Customer)
+                .WithMany(c => c.Accounts)
+                .HasForeignKey(a => a.CustomerId);
         }
     }
 }
