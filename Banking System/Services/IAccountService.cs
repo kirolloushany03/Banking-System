@@ -5,7 +5,7 @@ namespace Banking_System.Services
 {
     public interface IAccountService
     {
-        Task<AccountDto> CreateAccountAsync(CreateAccountDto createAccountDto);
+        Task<AccountDto> CreateAccountAsync(CreateAccountDto createAccountDto, int customerId);
         Task<decimal> GetBalance(string AccountNumber);
         Task<AccountDto> UpdateAccountBalanceAsync(string AccountNumber, decimal Amount, bool isdeposit);
         Task CalculateMonthlyInterest();
