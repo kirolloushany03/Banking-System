@@ -27,6 +27,10 @@ namespace Banking_System.Entites
         [Column(TypeName = "decimal(18,2)")]
         public decimal? InterestRate { get; set; }
 
+        public int CustomerId { get; set; }
+
+        public Customer Customer { get; set; } = null!;
+
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 }
