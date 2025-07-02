@@ -59,15 +59,15 @@ namespace Banking_System.Middlware
 
                 // --- Optional Debugging ---
                 // You can leave this in for one last test run to confirm success.
-                Console.WriteLine("--- JWT Middleware Debug ---");
-                Console.WriteLine("Token validation succeeded.");
-                Console.WriteLine($"User IsAuthenticated: {context.User.Identity?.IsAuthenticated}");
-                Console.WriteLine("Claims found:");
-                foreach (var claim in context.User.Claims)
-                {
-                    Console.WriteLine($"- {claim.Type}: {claim.Value}");
-                }
-                Console.WriteLine("--- End Debug ---");
+                //Console.WriteLine("--- JWT Middleware Debug ---");
+                //Console.WriteLine("Token validation succeeded.");
+                //Console.WriteLine($"User IsAuthenticated: {context.User.Identity?.IsAuthenticated}");
+                //Console.WriteLine("Claims found:");
+                //foreach (var claim in context.User.Claims)
+                //{
+                //    Console.WriteLine($"- {claim.Type}: {claim.Value}");
+                //}
+                //Console.WriteLine("--- End Debug ---");
             }
             catch (Exception ex)
             {
