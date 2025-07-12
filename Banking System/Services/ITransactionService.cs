@@ -8,6 +8,10 @@ namespace Banking_System.Services
         Task<TransactionDto> DepositAsync(CreateDepositDto createDepositDto);
         Task<TransactionDto> WithdrawAsync(CreateWithdrawDto createWithdrawDto);
         Task<TransactionDto> TransferAsync(CreateTransferDto createTransferDto);
-        Task<TransactionDto> LogTransactionAsync(Transaction transaction);
+        //Task<TransactionDto> LogTransactionAsync(Transaction transaction);
+
+        Task<CreateTransactionResultDto> CreateManualTransactionAsync(CreateTransactionDto dto);
+
+
     }
 }

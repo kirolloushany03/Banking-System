@@ -21,48 +21,122 @@ namespace Banking_System.Services
 
 
 
+        //public async Task<TransactionDto> DepositAsync(CreateDepositDto createDepositDto)
+        //{
+        //    // Update balance using the new method
+        //    var account = await _accountService.UpdateAccountBalanceAsync(
+        //        createDepositDto.AccountNumber,
+        //        createDepositDto.Amount,
+        //        isdeposit: true
+        //    );
+
+        //    // Create transaction
+        //    var transaction = new Transaction
+        //    {
+        //        AccountId = account.Id,
+        //        Amount = createDepositDto.Amount,
+        //        TransactionType = TransactionType.Deposit,
+        //        Timestamp = DateTime.UtcNow
+        //    };
+
+        //    // Log the transaction
+        //    return _mapper.Map<TransactionDto>(await LogTransactionAsync(transaction));
+        //}
+
         public async Task<TransactionDto> DepositAsync(CreateDepositDto createDepositDto)
         {
-            // Update balance using the new method
-            var account = await _accountService.UpdateAccountBalanceAsync(
-                createDepositDto.AccountNumber,
-                createDepositDto.Amount,
-                isdeposit: true
-            );
+            // 1. Proactively find the account by its public number.
+            var account = await _context.TbAccount
+                .FirstOrDefaultAsync(a => a.AccountNumber == createDepositDto.AccountNumber);
 
-            // Create transaction
+            if (account == null)
+            {
+                throw new Exception("Account not found.");
+            }
+
+            // 2. Update the balance.
+            account.Balance += createDepositDto.Amount;
+
+            // 3. Create the new Transaction, linking the full Account object.
             var transaction = new Transaction
             {
-                AccountId = account.Id,
+                Account = account, // Link the full object
                 Amount = createDepositDto.Amount,
                 TransactionType = TransactionType.Deposit,
                 Timestamp = DateTime.UtcNow
             };
 
-            // Log the transaction
-            return _mapper.Map<TransactionDto>(await LogTransactionAsync(transaction));
+            // 4. Add the new transaction to be tracked.
+            _context.TbTransaction.Add(transaction);
+
+            // 5. Save all changes (the balance update and the new transaction) at once.
+            await _context.SaveChangesAsync();
+
+            // 6. Map the complete transaction object to a DTO for the response.
+            return _mapper.Map<TransactionDto>(transaction);
         }
+
+        //public async Task<TransactionDto> WithdrawAsync(CreateWithdrawDto createWithdrawDto)
+        //{
+        //    // Update balance using the new method
+        //    var account = await _accountService.UpdateAccountBalanceAsync(
+        //        createWithdrawDto.AccountNumber,
+        //        createWithdrawDto.Amount,
+        //        isdeposit: false
+        //    );
+
+        //    // Create transaction
+        //    var transaction = new Transaction
+        //    {
+        //        AccountId = account.Id,
+        //        Amount = createWithdrawDto.Amount,
+        //        TransactionType = TransactionType.Withdrawal,
+        //        Timestamp = DateTime.UtcNow
+        //    };
+
+        //    // Log the transaction
+        //    return _mapper.Map<TransactionDto>(await LogTransactionAsync(transaction));
+        //}
 
         public async Task<TransactionDto> WithdrawAsync(CreateWithdrawDto createWithdrawDto)
         {
-            // Update balance using the new method
-            var account = await _accountService.UpdateAccountBalanceAsync(
-                createWithdrawDto.AccountNumber,
-                createWithdrawDto.Amount,
-                isdeposit: false
-            );
+            // 1. Proactively find the account.
+            var account = await _context.TbAccount
+                .FirstOrDefaultAsync(a => a.AccountNumber == createWithdrawDto.AccountNumber);
 
-            // Create transaction
+            if (account == null)
+            {
+                throw new Exception("Account not found.");
+            }
+
+            // 2. Perform validation checks before changing anything.
+            if (account.AccountType == AccountType.checking && (account.Balance + account.OverdraftLimit) < createWithdrawDto.Amount)
+            {
+                throw new Exception("Insufficient funds, including overdraft limit.");
+            }
+            if (account.AccountType == AccountType.savings && account.Balance < createWithdrawDto.Amount)
+            {
+                throw new Exception("Insufficient funds in savings account.");
+            }
+
+            // 3. Update the balance.
+            account.Balance -= createWithdrawDto.Amount;
+
+            // 4. Create the new Transaction, linking the full Account object.
             var transaction = new Transaction
             {
-                AccountId = account.Id,
+                Account = account, // Link the full object
                 Amount = createWithdrawDto.Amount,
                 TransactionType = TransactionType.Withdrawal,
                 Timestamp = DateTime.UtcNow
             };
 
-            // Log the transaction
-            return _mapper.Map<TransactionDto>(await LogTransactionAsync(transaction));
+            // 5. Add and Save all changes at once.
+            _context.TbTransaction.Add(transaction);
+            await _context.SaveChangesAsync();
+
+            // 6. Map and return the complete DTO.
+            return _mapper.Map<TransactionDto>(transaction);
         }
 
         /*public async Task<TransactionDto> TransferAsync(CreateTransferDto createTransferDto)
@@ -178,12 +252,41 @@ namespace Banking_System.Services
             }
         }
 
-        public async Task<TransactionDto> LogTransactionAsync(Transaction transaction)
-        {
-            // Add transaction to database
-            _context.TbTransaction.Add(transaction);
+        //public async Task<TransactionDto> LogTransactionAsync(Transaction transaction)
+        //{
+        //    // Add transaction to database
+        //    _context.TbTransaction.Add(transaction);
+        //    await _context.SaveChangesAsync();
+        //    return _mapper.Map<TransactionDto>(transaction);
+        //}
+
+        public async Task<CreateTransactionResultDto> CreateManualTransactionAsync(CreateTransactionDto dto)
+        { 
+            var account  = await _context.TbAccount.FindAsync(dto.AccountId);
+            if (account == null)
+            { 
+                throw new Exception($"Account id {dto.AccountId} not found");
+            }
+
+            var newTransaction = new Transaction
+            {
+                Account = account,
+                Amount = dto.Amount,
+                TransactionType = dto.TransactionType,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _context.TbTransaction.Add(newTransaction);
             await _context.SaveChangesAsync();
-            return _mapper.Map<TransactionDto>(transaction);
+
+            return new CreateTransactionResultDto
+            {
+                Id = newTransaction.Id,
+                AccountNumber = newTransaction.Account.AccountNumber,
+                Amount = newTransaction.Amount,
+                TransactionType = newTransaction.TransactionType,
+                Timestamp = newTransaction.Timestamp
+            };
         }
     }
 }

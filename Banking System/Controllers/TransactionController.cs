@@ -47,16 +47,9 @@ namespace Banking_System.Controllers
         [HttpPost("transaction")]
         public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionDto createTransactionDto)
         {
-            var transaction = new Entites.Transaction
-            {
-                AccountId = createTransactionDto.AccountId,
-                Amount = createTransactionDto.Amount,
-                TransactionType = createTransactionDto.TransactionType,
-                Timestamp = DateTime.UtcNow
-            };
-
-            var loggedTransaction = await _transactionService.LogTransactionAsync(transaction);
-            return CreatedAtAction(nameof(GetTransaction), new { id = loggedTransaction.Id }, loggedTransaction);
+            
+            var resultdto = await _transactionService.CreateManualTransactionAsync(createTransactionDto);
+            return CreatedAtAction(nameof(GetTransaction), new { id = resultdto.Id }, resultdto);
         }
 
         [HttpGet("transaction/{id}")]
